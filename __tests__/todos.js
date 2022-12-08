@@ -35,4 +35,9 @@ describe("Todo Application", function () {
     const response = await agent.put("/todos/1");
     expect(response.statusCode).toBe(200);
   });
+
+  test("Delete a Todo", async () => {
+    const response = await agent.delete(`/todos/1`);
+    expect(response.statusCode).toBe(200);
+  });
 });

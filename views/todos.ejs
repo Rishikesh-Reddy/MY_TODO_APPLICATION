@@ -21,7 +21,7 @@
       <label  for="todo-checkbox-<%= todo.id %>" class="text-sm ml-2 text-gray-600 cursor-pointer">
         <%= todo.title %>
       </label>
-      <a href="#" class="trash-icon ml-2">
+      <a href="#" class="trash-icon ml-2" onclick="deleteTodo(<%= todo.id %>)" >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
