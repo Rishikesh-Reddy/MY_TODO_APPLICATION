@@ -57,6 +57,16 @@ module.exports = (sequelize, DataTypes) => {
         },
       });
     }
+
+    static async completedItems() {
+      return await this.findAll({
+        where: {
+          completed: {
+            [Op.eq]: true,
+          },
+        },
+      });
+    }
   }
   Todo.init(
     {

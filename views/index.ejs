@@ -70,9 +70,10 @@
                 </div>
             </form>
             <div>
-                <%- include('todos.ejs', {title: "Overdue", data: overDue, id: "overdue"}) %> 
-                <%- include('todos.ejs', {title: "Due Today", data: dueToday, id: "due-today"}) %>
-                <%- include('todos.ejs', {title: "Due Later", data: dueLater, id: "due-later"}) %>
+                <%- include('todos.ejs', {title: "Overdue", data: overDue.filter(todo => !todo.completed), id: "overdue"}) %> 
+                <%- include('todos.ejs', {title: "Due Today", data: dueToday.filter(todo => !todo.completed), id: "due-today"}) %>
+                <%- include('todos.ejs', {title: "Due Later", data: dueLater.filter(todo => !todo.completed), id: "due-later"}) %>
+                <%- include('todos.ejs', {title: "Completed", data: completedItems, id: "completed-items"}) %>
             </div>
         </div>
     </div>

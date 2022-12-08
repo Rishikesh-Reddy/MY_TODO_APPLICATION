@@ -19,8 +19,8 @@ describe("Todo Application", function () {
 
   afterAll(async () => {
     try {
-      await db.sequelize.close();
       await server.close();
+      await db.sequelize.close();
     } catch (error) {
       console.log(error);
     }
@@ -62,12 +62,22 @@ describe("Todo Application", function () {
   });
 
   test("Delete a Todo", async () => {
-    const res = await agent.get("/");
-    const csrfToken = extractCSRFToken(res);
-    const response = await agent.delete(`/todos/1`).send({
+    let res = await agent.get("/");
+    let csrfToken = extractCSRFToken(res);
+    const groupedTodosResponse = await agent
+      .get("/")
+      .set("Accept", "application/json");
+    const parsedGroupedResponse = JSON.parse(groupedTodosResponse.text);
+    const dueTodayCount = parsedGroupedResponse.dueToday.length;
+    const latestTodo = parsedGroupedResponse.dueToday[dueTodayCount - 1];
+
+    res = await agent.get("/");
+    csrfToken = extractCSRFToken(res);
+
+    const deleteResponse = await agent.delete(`/todos/${latestTodo.id}`).send({
       _csrf: csrfToken,
     });
-    expect(JSON.parse(response.text).success).toBe(true);
-    expect(response.statusCode).toBe(200);
+
+    expect(JSON.parse(deleteResponse.text).success).toBe(true);
   });
 });
