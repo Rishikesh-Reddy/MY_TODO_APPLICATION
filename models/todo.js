@@ -18,8 +18,8 @@ module.exports = (sequelize, DataTypes) => {
       return this.create({ title: title, dueDate: dueDate, completed: false });
     }
 
-    markAsCompleted() {
-      return this.update({ completed: true });
+    toggleCompleted() {
+      return this.update({ completed: !this.completed });
     }
 
     static async listTodos() {

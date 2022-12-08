@@ -6,6 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ToDo Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        function toggleTodo(id) {
+            console.log(id)
+            fetch(`/todos/${id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+            })
+            .then((res) => {
+                if (res.ok){
+                  console.log("Hello")
+                    window.location.reload();
+                }
+            })
+            .catch((err) => {
+                console.log(err);
+            })
+        }
+      </script>
 </head>
 <body>
     <div class="grid grid-cols-6">

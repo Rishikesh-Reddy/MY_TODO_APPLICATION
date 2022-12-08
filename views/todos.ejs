@@ -13,9 +13,12 @@
     >
       <input
         type="checkbox"
+        id="todo-checkbox-<%= todo.id %>"
         class="w-4 h-4 text-blue-600 bg-gray-100 rounded border"
+        <%= todo.completed ? "checked" : "" %>
+        onChange="toggleTodo(<%= todo.id %>)"
       />
-      <label class="text-sm ml-2 text-gray-600 cursor-pointer">
+      <label  for="todo-checkbox-<%= todo.id %>" class="text-sm ml-2 text-gray-600 cursor-pointer">
         <%= todo.title %>
       </label>
       <a href="#" class="trash-icon ml-2">
