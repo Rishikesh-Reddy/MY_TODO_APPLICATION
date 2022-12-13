@@ -93,8 +93,40 @@ module.exports = (sequelize, DataTypes) => {
   }
   Todo.init(
     {
-      title: DataTypes.STRING,
-      dueDate: DataTypes.DATEONLY,
+      title: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+          validateTitleLength: function (value) {
+            if (value == null || value.length < 5) {
+              throw new Error("Title must be at least 5 characters long");
+            }
+          },
+        },
+      },
+      dueDate: {
+        type: DataTypes.DATEONLY,
+        allowNull: false,
+        validate: {
+          notNull: {
+            msg: "Due date cannot be null",
+          },
+          isDate: {
+            msg: "Due date must be a valid date",
+          },
+          isInRange: function (date) {
+            let yearBefore = new Date(
+              new Date().setFullYear(new Date().getFullYear() - 1)
+            );
+            let yearAfter = new Date(
+              new Date().setFullYear(new Date().getFullYear() + 1)
+            );
+            if (yearBefore > date || yearAfter < date) {
+              throw new Error("Due date must be within 1 Year of today");
+            }
+          },
+        },
+      },
       completed: DataTypes.BOOLEAN,
     },
     {

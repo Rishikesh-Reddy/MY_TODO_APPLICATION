@@ -12,6 +12,7 @@
     <div class="grid grid-cols-6">
         <div class="col-start-3 col-span-2">
             <%- include('header.ejs') %> 
+            <p class="py-2">Already have an account ? <a href="/login" class="text-green-600">Sign In</a></p>
             <h6 class="py-4">Sign Up as a New User</h6>
             <form action="/users" method="post">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -35,6 +36,15 @@
                     <button type="submit" class="text-white bg-green-600 hover:bg-green-800 font-medium rounded px-5 py-2">Sign Up</button>
                 </div>
             </form>
+            <div>
+                <% if(messages && messages.error && messages.error.length > 0)  { %>
+                    <ul class="bg-red-100 rounded border border-red-200 border-2">
+                        <% for(var i=0; i<messages.error.length; i++) { %>
+                                <li class="text-center"> <%= messages.error[i] %></li>
+                        <% } %>
+                    </ul>
+                <% } %>
+            </div>
         </div>
     </div>
 </body>

@@ -3,27 +3,27 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const csrf = require("tiny-csrf");
-
+const flash = require("connect-flash");
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const connectEnsureLogin = require("connect-ensure-login");
 const session = require("express-session");
 const bcrypt = require("bcrypt");
-
 const saltRounds = 10;
-
 const { Todo } = require("./models");
 const { User } = require("./models");
-
 const app = express();
+
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: false }));
 app.set("view engine", "ejs");
 // eslint-disable-next-line no-undef
 app.use(express.static(path.join(__dirname, "public")));
+// eslint-disable-next-line no-undef
+app.set("views", path.join(__dirname, "views"));
 app.use(cookieParser("Some secret info"));
 app.use(csrf("UicgFjabMtvsSJEHUSfK3Dz0NR6K0pIm", ["DELETE", "PUT", "POST"]));
-
+app.use(flash());
 app.use(
   session({
     secret: "SuperSecrectInformation",
@@ -37,6 +37,10 @@ app.use(
 
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(function (request, response, next) {
+  response.locals.messages = request.flash();
+  next();
+});
 
 passport.use(
   new LocalStrategy(
@@ -45,29 +49,17 @@ passport.use(
       passwordField: "password",
     },
     async (email, password, done) => {
-      // try {
-      //   const user = await User.findOne({ where: { email: email } })
-      //   if (!user) {
-      //     return done(null, false, { message: 'Incorrect email.' });
-      //   }
-      //   if (!user.validPassword(password)) {
-      //     return done(null, false, { message: 'Incorrect password.' });
-      //   }
-      //   return done(null, user);
-      // } catch (error) {
-      //   return done(error);
-      // }
       User.findOne({ where: { email: email } })
         .then(async (user) => {
           const result = await bcrypt.compare(password, user.password);
           if (result) {
             return done(null, user);
           } else {
-            return done("Invalid Password");
+            return done(null, false, { message: "Invalid password" });
           }
         })
-        .catch((error) => {
-          return error;
+        .catch(() => {
+          return done(null, false, { message: "Invalid email" });
         });
     }
   )
@@ -105,6 +97,7 @@ app.get(
     const dueToday = await Todo.dueToday(loggedInUser);
     const dueLater = await Todo.dueLater(loggedInUser);
     const completedItems = await Todo.completedItems(loggedInUser);
+    // console.log(overDue, dueToday, dueLater, completedItems)
     if (request.accepts("html")) {
       response.render("todos", {
         title: "Todo Application",
@@ -125,33 +118,27 @@ app.get(
   }
 );
 
-app.get(
-  "/todos/:id",
+app.post(
+  "/todos",
   connectEnsureLogin.ensureLoggedIn(),
   async function (request, response) {
     try {
-      const todo = await Todo.findByPk(request.params.id);
-      return response.json(todo);
+      await Todo.addTodo({
+        title: request.body.title,
+        dueDate: request.body.dueDate,
+        userId: request.user.id,
+      });
+      return response.redirect("/todos");
     } catch (error) {
-      console.log(error);
-      return response.status(422).json(error);
+      // console.log(error)
+      request.flash(
+        "error",
+        error.errors.map((error) => error.message)
+      );
+      response.redirect("/todos");
     }
   }
 );
-
-app.post("/todos", async function (request, response) {
-  try {
-    await Todo.addTodo({
-      title: request.body.title,
-      dueDate: request.body.dueDate,
-      userId: request.user.id,
-    });
-    return response.redirect("/todos");
-  } catch (error) {
-    console.log(error);
-    return response.status(422).json(error);
-  }
-});
 
 app.put(
   "/todos/:id",
@@ -162,7 +149,7 @@ app.put(
       const updatedTodo = await todo.toggleCompleted();
       return response.json(updatedTodo);
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       return response.status(422).json(error);
     }
   }
@@ -202,23 +189,29 @@ app.get("/signup", (request, response) => {
 app.post("/users", async (request, response) => {
   const hashedPassword = await bcrypt.hash(request.body.password, saltRounds);
   // console.log(hashedPassword)
+  const newUser = {
+    firstName: request.body.firstname,
+    lastName: request.body.lastname,
+    email: request.body.email,
+    password: hashedPassword,
+  };
+  // console.log(newUser)
   try {
-    const user = await User.create({
-      firstName: request.body.firstName,
-      lastName: request.body.lastName,
-      email: request.body.email,
-      password: hashedPassword,
-    });
+    const user = await User.create(newUser);
     request.login(user, (error) => {
       if (error) {
-        console.log(error);
+        // console.log(error);
         response.status(422).json(error);
       }
       response.redirect("/todos");
     });
   } catch (error) {
-    console.log(error);
-    response.status(422).json(error);
+    // console.log(error);
+    request.flash(
+      "error",
+      error.errors.map((error) => error.message)
+    );
+    response.redirect("/signup");
   }
 });
 
@@ -231,7 +224,10 @@ app.get("/login", (request, response) => {
 
 app.post(
   "/session",
-  passport.authenticate("local", { failureRedirect: "/login" }),
+  passport.authenticate("local", {
+    failureRedirect: "/login",
+    failureFlash: true,
+  }),
   (request, response) => {
     response.redirect("/todos");
   }
