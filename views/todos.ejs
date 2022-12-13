@@ -10,19 +10,19 @@
     <script>
         var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         function toggleTodo(id) {
-            console.log(id)
+            todoStatus = document.getElementById(`todo-checkbox-${id}`).checked
             fetch(`/todos/${id}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
+                    completed: todoStatus,
                     _csrf: token
                 })
             })
             .then((res) => {
                 if (res.ok){
-                  console.log("Hello")
                     window.location.reload();
                 }
             })

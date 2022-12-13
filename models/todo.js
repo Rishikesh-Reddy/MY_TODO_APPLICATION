@@ -26,8 +26,8 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
 
-    toggleCompleted() {
-      return this.update({ completed: !this.completed });
+    async setCompletionStatus({ completionStatus }) {
+      return await this.update({ completed: completionStatus });
     }
 
     static async listTodos() {

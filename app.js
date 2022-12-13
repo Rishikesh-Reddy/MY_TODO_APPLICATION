@@ -146,7 +146,9 @@ app.put(
   async function (request, response) {
     const todo = await Todo.findByPk(request.params.id);
     try {
-      const updatedTodo = await todo.toggleCompleted();
+      const updatedTodo = await todo.setCompletionStatus({
+        completionStatus: request.body.completed,
+      });
       return response.json(updatedTodo);
     } catch (error) {
       // console.log(error);
