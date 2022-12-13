@@ -21,6 +21,18 @@ const login = async (agent, email, password) => {
   });
 };
 
+const createUser = async (agent, firstname, lastname, email, password) => {
+  let res = await agent.get("/signup");
+  const csrfToken = extractCSRFToken(res);
+  res = await agent.post("/users").send({
+    firstname: firstname,
+    lastname: lastname,
+    email: email,
+    password: password,
+    _csrf: csrfToken,
+  });
+};
+
 describe("Todo Application", function () {
   beforeAll(async () => {
     await db.sequelize.sync({ force: true, logging: false });
@@ -67,6 +79,50 @@ describe("Todo Application", function () {
       _csrf: csrfToken,
     });
     expect(response.statusCode).toBe(302);
+  });
+
+  test("Should not be able to update a Todo that does not belong to the user", async () => {
+    let agent = request.agent(server);
+
+    // Create An New User
+    await createUser(agent, "Test", "User2", "user2@gmail.com", "password");
+
+    let res = await agent.get("/todos");
+    let csrfToken = extractCSRFToken(res);
+    await agent.post("/todos").send({
+      title: "Buy milk",
+      dueDate: new Date().toISOString(),
+      completed: false,
+      _csrf: csrfToken,
+    });
+
+    // Create a new Todo
+    res = await agent.get("/todos");
+    csrfToken = extractCSRFToken(res);
+    let groupedTodosResponse = await agent
+      .get("/todos")
+      .set("Accept", "application/json");
+    let parsedGroupedResponse = JSON.parse(groupedTodosResponse.text);
+    let dueTodayCount = parsedGroupedResponse.dueToday.length;
+    let latestTodo = parsedGroupedResponse.dueToday[dueTodayCount - 1];
+
+    // Sign out the user
+    res = await agent.get("/signout");
+
+    // Login as a different user
+    await login(agent, "user1@gmail.com", "password");
+
+    res = await agent.get("/todos");
+    csrfToken = extractCSRFToken(res);
+
+    const toggleCompletedResponse = await agent
+      .put(`/todos/${latestTodo.id}`)
+      .send({
+        completed: true,
+        _csrf: csrfToken,
+      });
+
+    expect(toggleCompletedResponse.statusCode).toBe(403);
   });
 
   test("Mark Todo Complete", async () => {

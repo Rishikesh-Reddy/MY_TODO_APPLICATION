@@ -30,7 +30,7 @@ app.use(
     cookie: {
       maxAge: 24 * 60 * 60 * 1000,
     },
-    resave: true,
+    resave: false,
     saveUninitialized: true,
   })
 );
@@ -82,10 +82,15 @@ passport.deserializeUser((id, done) => {
 });
 
 app.get("/", async function (request, response) {
-  response.render("index", {
-    title: "Todo Application",
-    csrfToken: request.csrfToken(),
-  });
+  if (request.user) {
+    request.flash("info", "You are already logged in");
+    response.redirect("/todos");
+  } else {
+    response.render("index", {
+      title: "Todo Application",
+      csrfToken: request.csrfToken(),
+    });
+  }
 });
 
 app.get(
@@ -93,6 +98,7 @@ app.get(
   connectEnsureLogin.ensureLoggedIn(),
   async (request, response) => {
     const loggedInUser = request.user.id;
+    const username = request.user.firstName + " " + request.user.lastName;
     const overDue = await Todo.overDue(loggedInUser);
     const dueToday = await Todo.dueToday(loggedInUser);
     const dueLater = await Todo.dueLater(loggedInUser);
@@ -105,6 +111,7 @@ app.get(
         dueToday: dueToday,
         dueLater: dueLater,
         completedItems: completedItems,
+        username: username,
         csrfToken: request.csrfToken(),
       });
     } else {
@@ -113,6 +120,7 @@ app.get(
         dueToday,
         dueLater,
         completedItems,
+        username,
       });
     }
   }
@@ -144,14 +152,25 @@ app.put(
   "/todos/:id",
   connectEnsureLogin.ensureLoggedIn(),
   async function (request, response) {
-    const todo = await Todo.findByPk(request.params.id);
+    const todo = await Todo.findOne({
+      where: {
+        id: request.params.id,
+        userId: request.user.id,
+      },
+    });
     try {
-      const updatedTodo = await todo.setCompletionStatus({
-        completionStatus: request.body.completed,
-      });
-      return response.json(updatedTodo);
+      if (todo) {
+        const updatedTodo = await todo.setCompletionStatus({
+          completionStatus: request.body.completed,
+          userId: request.user.id,
+        });
+        return response.json(updatedTodo);
+      } else {
+        return response
+          .status(403)
+          .json("You are not authorized to update this todo");
+      }
     } catch (error) {
-      // console.log(error);
       return response.status(422).json(error);
     }
   }
