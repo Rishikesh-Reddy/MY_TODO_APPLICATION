@@ -115,6 +115,7 @@ module.exports = (sequelize, DataTypes) => {
             msg: "Due date must be a valid date",
           },
           isInRange: function (date) {
+            date = new Date(date);
             let yearBefore = new Date(
               new Date().setFullYear(new Date().getFullYear() - 1)
             );
